@@ -10,7 +10,7 @@
  * License: GPL v2+
  */
 
-class_exists('Roots\Bedrock\URLFixer') || require_once __DIR__ . '/vendor/autoload.php';
+class_exists('Noticiesinfo\Utils\URLFixer') || require_once __DIR__ . '/vendor/autoload.php';
 
 use Noticiesinfo\Utils\URLFixer;
 

@@ -12,18 +12,10 @@ class URLFixer
      */
     public function addFilters()
     {
-        // Apply filters conditionally based on whether it's the main site
-        if (is_main_site()) {
-            add_filter('option_home', [$this, 'fixHomeURL']);
-            add_filter('option_siteurl', [$this, 'fixSiteURL']);
-            add_filter('network_site_url', [$this, 'fixNetworkSiteURL'], 10, 3);
-        } else {
-            add_filter('option_siteurl', [$this, 'fixSubsiteSiteURL']);
-            add_filter('login_url', [$this, 'fixSubsiteLoginURL'], 10, 3);
-            add_filter('lostpassword_url', [$this, 'fixSubsiteLostPasswordURL'], 10, 2);
-            add_filter('logout_url', [$this, 'fixSubsiteLogoutURL'], 10, 2);
-
-        }
+        add_filter('option_siteurl', [$this, 'fixSubsiteSiteURL']);
+        add_filter('login_url', [$this, 'fixSubsiteLoginURL'], 10, 3);
+        add_filter('lostpassword_url', [$this, 'fixSubsiteLostPasswordURL'], 10, 2);
+        add_filter('logout_url', [$this, 'fixSubsiteLogoutURL'], 10, 2);
     }
 
     /**
