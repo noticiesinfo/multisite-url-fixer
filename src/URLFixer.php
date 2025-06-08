@@ -17,6 +17,9 @@ class URLFixer
         add_filter('lostpassword_url', [$this, 'fixSubsiteLostPasswordURL'], 10, 2);
         add_filter('logout_url', [$this, 'fixSubsiteLogoutURL'], 10, 2);
         add_filter('plugins_url', [$this, 'fixSubstitutePluginsURL'], 10, 3);
+        add_filter('upload_dir', [$this, 'fixUploadURL']);
+        add_filter('wp_get_attachment_url', [$this, 'fixAttachmentURL'], 10, 2);
+        add_filter('wp_get_attachment_metadata', [$this, 'fixAttachmentMetadataURL'], 10, 2);
     }
 
     /**
@@ -28,7 +31,8 @@ class URLFixer
      * @param string|null $plugin  Plugin-specific path info (for plugins_url filter). Null for content_url.
      * @return string The potentially corrected URL.
      */
-    public function fixSubstitutePluginsURL($url, $path, $plugin = null) {
+    public function fixSubstitutePluginsURL($url, $path, $plugin = null)
+    {
         // 1. Only proceed if this is a Multisite installation.
         if (!is_multisite()) {
             return $url;
@@ -206,5 +210,65 @@ class URLFixer
         }
         $logout_url = wp_nonce_url($logout_url, 'log-out');
         return $logout_url;
+    }
+
+    /**
+     * Fixes the upload directory URLs for subsites to ensure they point to the correct content directory.
+     *
+     * @param array $dirs The upload directory information.
+     * @return array The modified upload directory information with corrected URLs.
+     */
+    public function fixUploadURL($dirs)
+    {
+        if (!is_main_site()) {
+            $site_url = get_site_url();
+            $content_url = content_url();
+
+            $dirs['baseurl'] = $content_url . '/uploads';
+            $dirs['basedir'] = WP_CONTENT_DIR . '/uploads';
+            $dirs['url'] = $dirs['baseurl'] . $dirs['subdir'];
+            $dirs['path'] = $dirs['basedir'] . $dirs['subdir'];
+        }
+        return $dirs;
+    }
+
+    /**
+     * Fixes the attachment URL for subsites to ensure it points to the correct content directory.
+     *
+     * @param string $url The original attachment URL.
+     * @param int $post_id The ID of the post associated with the attachment.
+     * @return string The modified attachment URL with the correct site URL.
+     */
+    public function fixAttachmentURL($url, $post_id)
+    {
+        if (!is_main_site()) {
+            $site_url = get_site_url();
+            $relative = wp_make_link_relative($url);
+            if (strpos($site_url, '/wp') !== false) {
+                $site_url = str_replace('/wp', '', $site_url);
+            }
+            $url = $site_url . $relative;
+        }
+        return $url;
+    }
+
+    /**
+     * Fixes the attachment metadata URLs for subsites to ensure they point to the correct content directory.
+     *
+     * @param array $data The attachment metadata.
+     * @param int $post_id The ID of the post associated with the attachment.
+     * @return array The modified attachment metadata with corrected URLs.
+     */
+    public function fixAttachmentMetadataURL($data, $post_id)
+    {
+        if (!is_main_site() && isset($data['sizes'])) {
+            $base_url = content_url('/uploads') . '/' . dirname($data['file']);
+            foreach ($data['sizes'] as &$size) {
+                if (isset($size['file'])) {
+                    $size['url'] = $base_url . '/' . $size['file'];
+                }
+            }
+        }
+        return $data;
     }
 }
